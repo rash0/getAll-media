@@ -2,31 +2,63 @@
 {% block body %}
 
 <div id="app">
-  [[ hamo ]]
   <div class="body">
-    <form action="/user" method="post">
-      <input name="username" placeholder="Search by @userName">
+    <form>
+      <input v-model="user_name" placeholder="Search by @userName">
+      <button v-on:click.stop.prevent="fetch_images">Submit</button>
     </form>
-    <div class="container">
-      <!-- {% if result_data %}
-      {% for item in result_data %}
-      {% for i in item.imgs %}
-      <img alt="hello" src="{{ i }}" />
-      {% endfor %}
-      {% endfor %}
-      {% else %}
-      Please enter a User name to search
-      {% endif %} -->
+    <div class="error">
+      <h4 v-if="res_status === 404 || res_status === 500">Sorry user canot be found</h4>
+      <h4 v-if="user_name === '' ">Why you dont just search ?</h4>
+      <img v-if="is_loading === true " width="100" height="100" src="https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.giphy.com%2Fmedia%2F62U9Iw4Kmvgl2%2Fgiphy.gif&f=1">
+    </div>
+    <div class="container" v-if="result_data !== ''">
+      <div class="image-group" v-for="tweet in result_data" :key="tweet.tweet_Id">
+        <img class="add-btn" src="https://img.icons8.com/office/36/000000/plus.png">
+        <img alt="hello" v-for="img in tweet.imgs" :src="img">
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+  window.value = 'Bound to the window';
+
   new Vue({
     delimiters: ['[[', ']]'],
     el: '#app',
     data: {
-      hamo: 'Not here'
+      user_name: '',
+      result_data: '',
+      res_status: '',
+      is_loading: false
+    },
+    methods: {
+      fetch_images() {
+
+        this.is_loading = true
+
+
+        const po = async () => {
+          this.result_data = ''
+          const response = await fetch(`http://localhost:8000/api/${this.user_name}/`);
+
+          if (response.status == 200) {
+
+            this.res_status = await response.status
+
+            const json = await response.json();
+
+            this.is_loading = false
+
+            return this.result_data = json.data
+          } else {
+            this.is_loading = false
+            return this.res_status = response.status
+          }
+        }
+        po()
+      }
     }
   })
 </script>
@@ -39,28 +71,47 @@
   .body {
     width: 100%;
     height: auto;
-    padding: 0;
-    position: relative;
     margin-top: 6rem;
   }
 
   .body input {
-    position: absolute;
     background: white;
     border: none;
     width: 20rem;
     height: 2.7rem;
     padding-left: 10px;
-    left: 38%;
     font-size: 16px;
-    margin-top: -4rem;
     box-shadow: 0 1px 4px 0 rgba(12, 12, 13, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.15);
     border-radius: 2px;
+  }
+
+  form {
+    display: flex;
+    justify-content: center;
+  }
+
+  button {
+    width: 4rem;
+    height: 2.75rem;
+    margin-left: .6rem;
+    font-size: 14px;
+    border-radius: 4px;
+    border: none;
+    background: coral
+  }
+
+  button:active {
+    background-color: blue;
   }
 
   .body input:focus {
     outline: solid 2px #73A6FF;
     outline-offset: -2px;
+  }
+
+  .error {
+    text-align: center;
+    margin-top: 5rem;
   }
 
   .container {
@@ -81,11 +132,28 @@
     margin-bottom: .4rem
   }
 
-  @media (max-width: 1200px) {
-    .body input {
-      left: 36%;
-    }
+  .image-group {
+    position: relative;
+    top: 0;
+    left: 0;
+  }
 
+  .image-group img:nth-child(1) {
+    width: 30px !important;
+    height: 30px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2000;
+  }
+
+  .image-group img:nth-child(2) {
+    position: relative;
+    top: 0;
+    left: 0;
+  }
+
+  @media (max-width: 1200px) {
     .container {
       -moz-column-count: 3;
       -webkit-column-count: 3;
@@ -104,10 +172,6 @@
   }
 
   @media (max-width: 800px) {
-    .body input {
-      left: 24%;
-    }
-
     .container {
       -moz-column-count: 2;
       -webkit-column-count: 2;
@@ -117,11 +181,6 @@
   }
 
   @media (max-width: 400px) {
-    .body input {
-      left: 15%;
-      width: 14rem;
-    }
-
     .container {
       -moz-column-count: 1;
       -webkit-column-count: 1;
