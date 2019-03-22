@@ -8,36 +8,36 @@
       <button v-on:click.stop.prevent="fetch_images">Submit</button>
     </form>
     <div class="error">
-      <h4 v-if="res_status === 404 || res_status === 500">Sorry user canot be found</h4>
+      [[ errors ]]
       <h4 v-if="user_name === '' ">Why you dont just search ?</h4>
       <img v-if="is_loading === true " width="100" height="100" src="https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.giphy.com%2Fmedia%2F62U9Iw4Kmvgl2%2Fgiphy.gif&f=1">
     </div>
     <div class="container" v-if="result_data !== ''">
-      <div class="image-group" v-for="tweet in result_data" :key="tweet.tweet_Id">
-        <img class="add-btn" src="https://img.icons8.com/office/36/000000/plus.png">
-        <img alt="hello" v-for="img in tweet.imgs" :src="img">
+      <div class="image-group" v-for="tweet in result_data" v-on:key="tweet.tweet_Id">
+        <button v-bind:class="toggle_add_remove" v-on:click="addremove">
+          <span></span><span></span>
+        </button>
+        <img alt="hello" v-for="img in tweet.imgs" v-bind:src="img" />
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  window.value = 'Bound to the window';
-
   new Vue({
     delimiters: ['[[', ']]'],
     el: '#app',
     data: {
       user_name: '',
       result_data: '',
-      res_status: '',
-      is_loading: false
+      errors: '',
+      is_loading: false,
+      toggle_add_remove: ''
     },
     methods: {
       fetch_images() {
 
         this.is_loading = true
-
 
         const po = async () => {
           this.result_data = ''
@@ -45,19 +45,22 @@
 
           if (response.status == 200) {
 
-            this.res_status = await response.status
-
             const json = await response.json();
 
             this.is_loading = false
+            this.errors = await json.message
 
             return this.result_data = json.data
           } else {
             this.is_loading = false
+            // console.log('error' + json.data)
             return this.res_status = response.status
           }
         }
         po()
+      },
+      addremove() {
+        (this.toggle_add_remove === '') ? this.toggle_add_remove = 'remove': this.toggle_add_remove = ''
       }
     }
   })
@@ -90,18 +93,20 @@
     justify-content: center;
   }
 
-  button {
+  form button {
     width: 4rem;
-    height: 2.75rem;
+    height: 2.7rem;
     margin-left: .6rem;
     font-size: 14px;
-    border-radius: 4px;
+    border-radius: 2px;
     border: none;
-    background: coral
+    background: #06C65A;
+    color: white
   }
 
-  button:active {
-    background-color: blue;
+  form button:active {
+    background: #fff;
+    color: #06C65A
   }
 
   .body input:focus {
@@ -138,19 +143,57 @@
     left: 0;
   }
 
-  .image-group img:nth-child(1) {
-    width: 30px !important;
+  /* Add/remove button*/
+
+  .image-group button {
+    background: #e74c3c;
+    width: 30px;
     height: 30px;
+    border: 0;
+    border-radius: 50%;
+    font-size: 1em;
     position: absolute;
-    top: 10px;
-    right: 10px;
+    right: 5px;
+    top: 5px;
     z-index: 2000;
   }
 
-  .image-group img:nth-child(2) {
-    position: relative;
-    top: 0;
-    left: 0;
+  .image-group button span {
+    position: absolute;
+    transition: .2s;
+    background: white;
+    border-radius: 2px;
+  }
+
+  .image-group button span:first-of-type {
+    top: 25%;
+    bottom: 25%;
+    width: 10%;
+    left: 45%;
+  }
+
+  .image-group button span:last-of-type {
+    left: 25%;
+    right: 25%;
+    height: 10%;
+    top: 45%;
+  }
+
+  button.remove {
+    color: white !important;
+    background: white !important;
+    border: 2px solid #e74c3c
+  }
+
+  button.remove span:first-of-type,
+  button.remove span:last-of-type {
+    transform: rotate(90deg) !important;
+    background: #e74c3c !important;
+  }
+
+  button.remove span:last-of-type {
+    left: 50%;
+    right: 50%;
   }
 
   @media (max-width: 1200px) {
