@@ -13,11 +13,11 @@
       <img v-if="is_loading === true " width="100" height="100" src="https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.giphy.com%2Fmedia%2F62U9Iw4Kmvgl2%2Fgiphy.gif&f=1">
     </div>
     <div class="container" v-if="result_data !== ''">
-      <div class="image-group" v-for="tweet in result_data" v-on:key="tweet.tweet_Id">
-        <button v-bind:class="toggle_add_remove" v-on:click="addremove">
+      <div class="image" v-for="img in result_data">
+        <button v-bind:class="toggle_add_remove" v-on:click="addremove()">
           <span></span><span></span>
         </button>
-        <img alt="hello" v-for="img in tweet.imgs" v-bind:src="img" />
+        <img alt="hello" v-bind:src="img" />
       </div>
     </div>
   </div>
@@ -28,11 +28,17 @@
     delimiters: ['[[', ']]'],
     el: '#app',
     data: {
+      // user to be searched
       user_name: '',
+      // fetched data
       result_data: '',
       errors: '',
+      // loading after search
       is_loading: false,
-      toggle_add_remove: ''
+      // toggle add/remove button
+      toggle_add_remove: '',
+      array_to_download: []
+
     },
     methods: {
       fetch_images() {
@@ -43,14 +49,26 @@
           this.result_data = ''
           const response = await fetch(`http://localhost:8000/api/${this.user_name}/`);
 
-          if (response.status == 200) {
+          if (response.status === 200) {
 
             const json = await response.json();
 
+            // Filter the images only
+            var tweets = json.data
+            var imgs_only = []
+            for (var i = 0; i < tweets.length; i++) {
+              var images = tweets[i].imgs
+
+              for (var ii = 0; ii < images.length; ii++) {
+                imgs_only.push(images[ii])
+              }
+            }
+
+            // handle errors and turn of loading
             this.is_loading = false
             this.errors = await json.message
 
-            return this.result_data = json.data
+            return this.result_data = imgs_only
           } else {
             this.is_loading = false
             // console.log('error' + json.data)
@@ -59,8 +77,9 @@
         }
         po()
       },
-      addremove() {
-        (this.toggle_add_remove === '') ? this.toggle_add_remove = 'remove': this.toggle_add_remove = ''
+      addremove(e) {
+        console.log(e)
+        // (this.toggle_add_remove === '') ? this.toggle_add_remove = 'remove' : this.toggle_add_remove = ''
       }
     }
   })
@@ -137,7 +156,7 @@
     margin-bottom: .4rem
   }
 
-  .image-group {
+  .image {
     position: relative;
     top: 0;
     left: 0;
@@ -145,7 +164,7 @@
 
   /* Add/remove button*/
 
-  .image-group button {
+  .image button {
     background: #e74c3c;
     width: 30px;
     height: 30px;
@@ -158,21 +177,21 @@
     z-index: 2000;
   }
 
-  .image-group button span {
+  .image button span {
     position: absolute;
     transition: .2s;
     background: white;
     border-radius: 2px;
   }
 
-  .image-group button span:first-of-type {
+  .image button span:first-of-type {
     top: 25%;
     bottom: 25%;
     width: 10%;
     left: 45%;
   }
 
-  .image-group button span:last-of-type {
+  .image button span:last-of-type {
     left: 25%;
     right: 25%;
     height: 10%;

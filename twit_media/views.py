@@ -77,7 +77,7 @@ def index(req, username):
         # init the final dictionary
         results = {}
         results['data'] = []
-        
+
         # Iterate over all the li element inside the div with class "stream"
         for i, li_attr in enumerate(tweets_with_media):
 
