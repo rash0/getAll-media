@@ -14,7 +14,7 @@
     </div>
     <div class="container" v-if="result_data !== ''">
       <div class="image" v-for="img in result_data">
-        <button v-bind:class="toggle_add_remove" v-on:click="addremove()">
+        <button v-bind:class="(array_to_download.indexOf(img) !== -1) ? 'remove' : ''" v-on:click="addremove(img)">
           <span></span><span></span>
         </button>
         <img alt="hello" v-bind:src="img" />
@@ -35,11 +35,10 @@
       errors: '',
       // loading after search
       is_loading: false,
-      // toggle add/remove button
-      toggle_add_remove: '',
       array_to_download: []
 
     },
+    computed: {},
     methods: {
       fetch_images() {
 
@@ -47,6 +46,7 @@
 
         const po = async () => {
           this.result_data = ''
+
           const response = await fetch(`http://localhost:8000/api/${this.user_name}/`);
 
           if (response.status === 200) {
@@ -78,7 +78,16 @@
         po()
       },
       addremove(e) {
-        console.log(e)
+        var index = this.array_to_download.indexOf(e)
+
+        if (index === -1) {
+          return this.array_to_download.push(e)
+        }
+        if (index !== -1) {
+          return this.array_to_download.splice(index, 1);
+        }
+        console.log(this.array_to_download)
+
         // (this.toggle_add_remove === '') ? this.toggle_add_remove = 'remove' : this.toggle_add_remove = ''
       }
     }
