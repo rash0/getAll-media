@@ -5,7 +5,7 @@
   <div class="body">
     <form>
       <input v-model="user_name" placeholder="Search by @userName">
-      <button v-on:click.stop.prevent="fetch_images">Submit</button>
+      <button v-on:click.stop.prevent="fetch_images">Search</button>
     </form>
     <div class="error">
       [[ errors ]]
@@ -19,6 +19,12 @@
         </button>
         <img alt="hello" v-bind:src="img" />
       </div>
+    </div>
+  </div>
+  <div v-if="array_to_download.length > 0" class="download_bar">
+    <div>
+      <h4>[[ array_to_download.length ]] [[ (array_to_download.length === 1) ? 'Photo Selected' : 'Photos Selected ']]</h4>
+      <img v-on:click="down_load" src="https://img.icons8.com/ios/30/06C65A/installing-updates-filled.png">
     </div>
   </div>
 </div>
@@ -38,12 +44,11 @@
       array_to_download: []
 
     },
-    computed: {},
     methods: {
       fetch_images() {
 
         this.is_loading = true
-
+        this.errors = ''
         const po = async () => {
           this.result_data = ''
 
@@ -52,26 +57,27 @@
           if (response.status === 200) {
 
             const json = await response.json();
-
-            // Filter the images only
-            var tweets = json.data
-            var imgs_only = []
-            for (var i = 0; i < tweets.length; i++) {
-              var images = tweets[i].imgs
-
-              for (var ii = 0; ii < images.length; ii++) {
-                imgs_only.push(images[ii])
+            // check if the user doesnt exist
+            if (json.message === undefined) {
+              // Filter the images only
+              var tweets = json.data
+              var imgs_only = []
+              for (var i = 0; i < tweets.length; i++) {
+                var images = tweets[i].imgs
+                for (var ii = 0; ii < images.length; ii++) {
+                  imgs_only.push(images[ii])
+                }
               }
+            } else {
+              this.errors = json.message
             }
 
-            // handle errors and turn of loading
+            //turn off loading
             this.is_loading = false
-            this.errors = await json.message
 
             return this.result_data = imgs_only
           } else {
             this.is_loading = false
-            // console.log('error' + json.data)
             return this.res_status = response.status
           }
         }
@@ -82,13 +88,39 @@
 
         if (index === -1) {
           return this.array_to_download.push(e)
-        }
-        if (index !== -1) {
+        } else {
           return this.array_to_download.splice(index, 1);
         }
         console.log(this.array_to_download)
+      },
+      down_load() {
+        var zip = new JSZip();
+        var count = 0;
+        var zipFilename = "zipFilename.zip";
 
-        // (this.toggle_add_remove === '') ? this.toggle_add_remove = 'remove' : this.toggle_add_remove = ''
+        this.array_to_download.forEach(url => {
+          var filename = "hamo";
+
+          axios
+            .get(url, {
+              responseType: 'blob'
+            })
+            .then(res => {
+              zip.file(count + '.jpg', res.data, {
+                binary: true
+              });
+              count++;
+              if (count === this.array_to_download.length) {
+                zip.generateAsync({
+                    type: 'blob'
+                  })
+                  .then(content => {
+                    saveAs(content, this.user_name + '.zip');
+                  });
+              }
+            })
+            .catch(err => console.log(err))
+        })
       }
     }
   })
@@ -102,7 +134,7 @@
   .body {
     width: 100%;
     height: auto;
-    margin-top: 6rem;
+    margin-top: 3rem;
   }
 
   .body input {
@@ -258,6 +290,39 @@
       column-count: 1;
       margin: 1rem;
     }
+  }
+
+  .download_bar {
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    bottom: 0;
+    width: 100%;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0)
+  }
+
+  .download_bar div {
+    width: 24rem;
+    display: flex;
+    justify-content: space-between;
+    height: 3rem;
+    background: #222;
+  }
+
+  .download_bar div h4 {
+    float: left;
+    background: inherit;
+    color: white;
+    padding: 10px;
+    padding-top: 15px;
+    font-weight: lighter;
+  }
+
+  .download_bar div img {
+    background: inherit;
+    /* height: 2rem; */
+    padding: 10px;
   }
 </style>
 {% endblock %}
