@@ -19,9 +19,7 @@ def index(req, username):
     # check if the user exixts on twitter
     r = requests.get(url)
 
-    if len(username) > 15 or r.status_code != 200 :
-        return JsonResponse({ 'message': 'Sorry user canot be found :(' })
-    else:
+    if len(username) < 15 or r.status_code == 200 :
 
         options = Options()
         options.headless = True
@@ -50,15 +48,8 @@ def index(req, username):
         # get the parent div for twitter stream
         timeline = cleanSoup.find('div', class_ = 'stream')
 
-        # every tweet is made of li element
+        # every tweet is made of li element, get them in a list
         tweets = timeline.findAll('li', class_= 'js-stream-item stream-item stream-item')
-
-        # filter the li elemnts that have media only and add them to tweets_with_media
-        tweets_with_media = []
-        for li in tweets:
-            imgs = li.find('img', src=re.compile(".twimg.com/media/"))
-            if imgs is not None:
-                tweets_with_media.append(li)
 
         # Function that takes inline-style string and extract the video/gif link from
         # and manipulate it, by removing the word 'thumb' and replacing the word 'jpg' with 'mp4'
@@ -79,7 +70,7 @@ def index(req, username):
         results['data'] = []
 
         # Iterate over all the li element inside the div with class "stream"
-        for i, li_attr in enumerate(tweets_with_media):
+        for i, li_attr in enumerate(tweets):
 
            # Search inside every tweet/li element for the unix time span tag
            tweeted_At = li_attr.find('span', class_ = '_timestamp js-short-timestamp')
@@ -87,28 +78,23 @@ def index(req, username):
            # Twitter doesnt load the gif string before scrolling to it
            videos = li_attr.find('div', class_ = 'PlayableMedia-player')
 
-           images = li_attr.findAll('img', src=re.compile(".twimg.com/media/"))
+           ## Create the first level of the dictionary, which is the tweet ID
+           results['data'].append({
+                'tweet_Id': li_attr['data-item-id'],
+                'imgs': [],
+                # Condition in case that the tweet doesnt have videos/gif, then write none instead
+                'videos': video_link(videos),
+                'tweeted_At': tweeted_At['data-time'] if tweeted_At != None else None})
 
-           if images or videos is not None:
-               # Create the first level of the dictionary, which is the tweet ID
-               results['data'].append({
-                    'tweet_Id': li_attr['data-item-id'],
-                    'imgs': [],
-                    # Condition in case that the tweet doesnt have videos/gif, then write none instead
-                    'videos': video_link(videos),
-                    'tweeted_At': tweeted_At['data-time'] if tweeted_At != None else None})
-                    # 'created_At': strftime("%d-%b-%Y %H:%M:%S +0000", gmtime())})
-
-               for k, img_attr in enumerate(images):
+           # twittter have either image or video, so if video is here , then no need to iterate for images
+           if videos is None:
+               for k, img_attr in enumerate(li_attr.find_all('img', src=re.compile(".twimg.com/media/"))):
                    # Create and insert the second level of data, which is an array of images
                    results['data'][i]['imgs'].append(img_attr['src'])
 
-
-        # Get the path name from the inputed url, to use it for renaming th file
-        # a = urlparse(url)
-        # account_name = a.path.split('/')[1]
-
         return JsonResponse(results)
+    else:
+        return JsonResponse({ 'message': 'Sorry user canot be found :(' })
 
 
 

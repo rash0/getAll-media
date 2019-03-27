@@ -10,21 +10,33 @@
     <div class="error">
       [[ errors ]]
       <h4 v-if="user_name === '' ">Why you dont just search ?</h4>
-      <img v-if="is_loading === true " width="100" height="100" src="https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.giphy.com%2Fmedia%2F62U9Iw4Kmvgl2%2Fgiphy.gif&f=1">
+      {% load static %}
+      <img v-if="is_loading === true " width="100" height="100" src="{% static 'rings1.svg' %}">
     </div>
-    <div class="container" v-if="result_data !== ''">
-      <div class="image" v-for="img in result_data">
+    <div class="container" v-if="errors === '' && filter_images.length !== 0 ">
+      <div class="media" v-for="img in filter_images">
         <button v-bind:class="(array_to_download.indexOf(img) !== -1) ? 'remove' : ''" v-on:click="addremove(img)">
           <span></span><span></span>
         </button>
         <img alt="hello" v-bind:src="img" />
       </div>
     </div>
+    <div class="container" v-if="errors === '' && filter_videos.length !== 0 ">
+      <div class="media" v-for="vid in filter_videos">
+        <button>
+          <span></span><span></span>
+        </button>
+        <video controls="controls" autoplay="true" loop="true" preload="true">
+          <source v-bind:src="vid" type="video/mp4">
+          Sorry, no video
+        </video>
+      </div>
+    </div>
   </div>
   <div v-if="array_to_download.length > 0" class="download_bar">
     <div>
       <h4>[[ array_to_download.length ]] [[ (array_to_download.length === 1) ? 'Photo Selected' : 'Photos Selected ']]</h4>
-      <img v-on:click="down_load" src="https://img.icons8.com/ios/30/06C65A/installing-updates-filled.png">
+      <img v-on:click="down_load" src="{% static 'dld.png' %}">
     </div>
   </div>
 </div>
@@ -39,43 +51,56 @@
       // fetched data
       result_data: '',
       errors: '',
-      // loading after search
       is_loading: false,
       array_to_download: []
-
+    },
+    computed: {
+      filter_images() {
+        // Filter the images only
+        imgs_only = []
+        var tweets = this.result_data
+        for (var i = 0; i < tweets.length; i++) {
+          var images = tweets[i].imgs
+          // if (tweets[i].videos !== null) {
+          //   this.imgs_only.push(tweets[i].videos)
+          // }
+          for (var ii = 0; ii < images.length; ii++) {
+            imgs_only.push(images[ii])
+          }
+        }
+        return imgs_only
+      },
+      filter_videos() {
+        // Filter the videos only
+        video_only = []
+        var tweets = this.result_data
+        for (var i = 0; i < tweets.length; i++) {
+          if (tweets[i].videos !== null) {
+            video_only.push(tweets[i].videos)
+          }
+        }
+        return video_only
+      }
     },
     methods: {
       fetch_images() {
 
         this.is_loading = true
         this.errors = ''
-        const po = async () => {
-          this.result_data = ''
+        this.result_data = ''
 
+        const po = async () => {
           const response = await fetch(`http://localhost:8000/api/${this.user_name}/`);
 
           if (response.status === 200) {
 
             const json = await response.json();
             // check if the user doesnt exist
-            if (json.message === undefined) {
-              // Filter the images only
-              var tweets = json.data
-              var imgs_only = []
-              for (var i = 0; i < tweets.length; i++) {
-                var images = tweets[i].imgs
-                for (var ii = 0; ii < images.length; ii++) {
-                  imgs_only.push(images[ii])
-                }
-              }
-            } else {
+            if (json.message !== undefined) {
               this.errors = json.message
             }
-
-            //turn off loading
             this.is_loading = false
-
-            return this.result_data = imgs_only
+            return this.result_data = json.data
           } else {
             this.is_loading = false
             return this.res_status = response.status
@@ -99,14 +124,13 @@
         var zipFilename = "zipFilename.zip";
 
         this.array_to_download.forEach(url => {
-          var filename = "hamo";
-
           axios
             .get(url, {
               responseType: 'blob'
             })
             .then(res => {
-              zip.file(count + '.jpg', res.data, {
+              var file_name = count + '.jpg'
+              zip.file(file_name, res.data, {
                 binary: true
               });
               count++;
@@ -160,7 +184,7 @@
     font-size: 14px;
     border-radius: 2px;
     border: none;
-    background: #06C65A;
+    background: #2ECC71;
     color: white
   }
 
@@ -177,10 +201,11 @@
   .error {
     text-align: center;
     margin-top: 5rem;
+    color: white
   }
 
   .container {
-    line-height: 0;
+    line-height: 30px;
     -webkit-column-count: 5;
     -webkit-column-gap: 0px;
     -moz-column-count: 5;
@@ -190,22 +215,29 @@
     margin: 5rem;
     background: white;
     padding: 1rem;
+    border-radius: 2px;
   }
 
   .container img {
     width: 100% !important;
-    margin-bottom: .4rem
   }
 
-  .image {
+  .container video {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .media {
     position: relative;
     top: 0;
     left: 0;
+    background: white;
+
   }
 
   /* Add/remove button*/
 
-  .image button {
+  .media button {
     background: #e74c3c;
     width: 30px;
     height: 30px;
@@ -218,21 +250,21 @@
     z-index: 2000;
   }
 
-  .image button span {
+  .media button span {
     position: absolute;
     transition: .2s;
     background: white;
     border-radius: 2px;
   }
 
-  .image button span:first-of-type {
+  .media button span:first-of-type {
     top: 25%;
     bottom: 25%;
     width: 10%;
     left: 45%;
   }
 
-  .image button span:last-of-type {
+  .media button span:last-of-type {
     left: 25%;
     right: 25%;
     height: 10%;
@@ -291,6 +323,8 @@
       margin: 1rem;
     }
   }
+
+  /*download barrr*/
 
   .download_bar {
     position: fixed;
