@@ -11,7 +11,7 @@
       [[ errors ]]
       <h4 v-if="user_name === '' ">Why you dont just search ?</h4>
       {% load static %}
-      <img v-if="is_loading === true " width="100" height="100" src="{% static 'rings1.svg' %}">
+      <img v-if="is_loading === true " width="100" height="100" src="{% static 'rings.svg' %}">
     </div>
     <div class="container" v-if="errors === '' && filter_images.length !== 0 ">
       <div class="media" v-for="img in filter_images">
